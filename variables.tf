@@ -451,6 +451,7 @@ variable "deployment_batch_size_type" {
   type        = string
   default     = "Fixed"
   description = "The type of number that is specified in deployment_batch_size_type"
+  nullable    = false
 }
 
 variable "deployment_batch_size" {
@@ -568,4 +569,11 @@ variable "enable_capacity_rebalancing" {
   type        = bool
   default     = false
   description = "Specifies whether to enable the Capacity Rebalancing feature for Spot Instances in your Auto Scaling Group"
+}
+
+variable "tags" {
+  type        = map(string)
+  default     = {}
+  description = "A map of tags to add to all resources"
+  nullable    = false
 }

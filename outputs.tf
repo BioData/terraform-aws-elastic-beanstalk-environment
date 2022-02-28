@@ -1,8 +1,3 @@
-output "hostname" {
-  value       = module.dns_hostname.hostname
-  description = "DNS hostname"
-}
-
 output "id" {
   value       = join("", aws_elastic_beanstalk_environment.default.*.id)
   description = "ID of the Elastic Beanstalk environment"
@@ -13,23 +8,8 @@ output "name" {
   description = "Name of the Elastic Beanstalk environment"
 }
 
-output "security_group_id" {
-  value       = module.aws_security_group.id
-  description = "Elastic Beanstalk environment Security Group ID"
-}
-
-output "security_group_arn" {
-  value       = module.aws_security_group.arn
-  description = "Elastic Beanstalk environment Security Group ARN"
-}
-
-output "security_group_name" {
-  value       = module.aws_security_group.name
-  description = "Elastic Beanstalk environment Security Group name"
-}
-
 output "elb_zone_id" {
-  value       = var.alb_zone_id[var.region]
+  value       = var.alb_zone_id[data.aws_region.current.name]
   description = "ELB zone ID"
 }
 

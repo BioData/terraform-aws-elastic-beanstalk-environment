@@ -1,5 +1,5 @@
 locals {
-  enabled   = module.this.enabled
+  enabled   = var.enabled
   partition = join("", data.aws_partition.current.*.partition)
 }
 
@@ -30,9 +30,9 @@ data "aws_iam_policy_document" "service" {
 resource "aws_iam_role" "service" {
   count = local.enabled ? 1 : 0
 
-  name               = "${module.this.id}-eb-service"
+  name               = "BioData-${var.elastic_beanstalk_environment_name}-eb-service-role"
   assume_role_policy = join("", data.aws_iam_policy_document.service.*.json)
-  tags               = module.this.tags
+  tags               = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "enhanced_health" {
@@ -96,15 +96,15 @@ resource "aws_iam_role_policy_attachment" "elastic_beanstalk_multi_container_doc
 resource "aws_iam_role" "ec2" {
   count = local.enabled ? 1 : 0
 
-  name               = "${module.this.id}-eb-ec2"
+  name               = "BioData-${var.elastic_beanstalk_environment_name}-eb-ec2-role"
   assume_role_policy = join("", data.aws_iam_policy_document.ec2.*.json)
-  tags               = module.this.tags
+  tags               = var.tags
 }
 
 resource "aws_iam_role_policy" "default" {
   count = local.enabled ? 1 : 0
 
-  name   = "${module.this.id}-eb-default"
+  name   = "BioData-${var.elastic_beanstalk_environment_name}-eb-default-policy"
   role   = join("", aws_iam_role.ec2.*.id)
   policy = join("", data.aws_iam_policy_document.extended.*.json)
 }
@@ -157,10 +157,10 @@ resource "aws_iam_role_policy_attachment" "ecr_readonly" {
 resource "aws_ssm_activation" "ec2" {
   count = local.enabled ? 1 : 0
 
-  name               = module.this.id
+  name               = var.elastic_beanstalk_environment_name
   iam_role           = join("", aws_iam_role.ec2.*.id)
   registration_limit = var.autoscale_max
-  tags               = module.this.tags
+  tags               = var.tags
 }
 
 data "aws_iam_policy_document" "default" {
@@ -338,9 +338,9 @@ data "aws_iam_policy_document" "extended" {
 resource "aws_iam_instance_profile" "ec2" {
   count = local.enabled ? 1 : 0
 
-  name = "${module.this.id}-eb-ec2"
+  name = "BioData-${var.elastic_beanstalk_environment_name}-eb-ec2-policy"
   role = join("", aws_iam_role.ec2.*.name)
-  tags = module.this.tags
+  tags = var.tags
 }
 
 locals {
@@ -348,7 +348,7 @@ locals {
   # and if it is provided, terraform tries to recreate the application on each `plan/apply`
   # `Namespace` should be removed as well since any string that contains `Name` forces recreation
   # https://github.com/terraform-providers/terraform-provider-aws/issues/3963
-  tags = { for t in keys(module.this.tags) : t => module.this.tags[t] if t != "Name" && t != "Namespace" }
+  tags = { for t in keys(var.tags) : t => var.tags[t] if t != "Name" && t != "Namespace" }
 
   classic_elb_settings = [
     {
@@ -585,7 +585,7 @@ locals {
 resource "aws_elastic_beanstalk_environment" "default" {
   count = local.enabled ? 1 : 0
 
-  name                   = module.this.id
+  name                   = var.elastic_beanstalk_environment_name
   application            = var.elastic_beanstalk_application_name
   description            = var.description
   tier                   = var.tier
@@ -628,7 +628,7 @@ resource "aws_elastic_beanstalk_environment" "default" {
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name      = "SecurityGroups"
-    value     = join(",", compact(sort(concat([module.aws_security_group.id], var.associated_security_group_ids))))
+    value     = join(",", compact(sort(var.associated_security_group_ids)))
     resource  = ""
   }
 
@@ -663,7 +663,7 @@ resource "aws_elastic_beanstalk_environment" "default" {
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "BASE_HOST"
-    value     = module.this.name
+    value     = var.elastic_beanstalk_environment_name
     resource  = ""
   }
 
@@ -1091,7 +1091,7 @@ data "aws_iam_policy_document" "elb_logs" {
     ]
 
     resources = [
-      "arn:${local.partition}:s3:::${module.this.id}-eb-loadbalancer-logs/*"
+      "arn:${local.partition}:s3:::${var.elastic_beanstalk_environment_name}-eb-loadbalancer-logs/*"
     ]
 
     principals {
@@ -1111,12 +1111,12 @@ resource "aws_s3_bucket" "elb_logs" {
   #bridgecrew:skip=BC_AWS_GENERAL_56:Skipping "Ensure S3 buckets are encrypted with KMS by default"
   #bridgecrew:skip=BC_AWS_NETWORKING_52:Skipping "Ensure S3 Bucket has public access blocks"
   #bridgecrew:skip=BC_AWS_GENERAL_72:Skipping "Ensure S3 bucket has cross-region replication enabled"
-  count         = local.enabled && var.tier == "WebServer" && var.environment_type == "LoadBalanced" && var.loadbalancer_type != "network" && !var.loadbalancer_is_shared ? 1 : 0
-  bucket        = "${module.this.id}-eb-loadbalancer-logs"
+  count         = 0
+  bucket        = "${var.elastic_beanstalk_environment_name}-eb-loadbalancer-logs"
   acl           = "private"
   force_destroy = var.force_destroy
   policy        = join("", data.aws_iam_policy_document.elb_logs.*.json)
-  tags          = module.this.tags
+  tags          = var.tags
 
   dynamic "server_side_encryption_configuration" {
     for_each = var.s3_bucket_encryption_enabled ? ["true"] : []
@@ -1138,20 +1138,9 @@ resource "aws_s3_bucket" "elb_logs" {
     for_each = var.s3_bucket_access_log_bucket_name != "" ? [1] : []
     content {
       target_bucket = var.s3_bucket_access_log_bucket_name
-      target_prefix = "logs/${module.this.id}/"
+      target_prefix = "logs/${var.elastic_beanstalk_environment_name}/"
     }
   }
 }
 
-module "dns_hostname" {
-  source  = "cloudposse/route53-cluster-hostname/aws"
-  version = "0.12.2"
-
-  enabled = local.enabled && var.dns_zone_id != "" && var.tier == "WebServer" ? true : false
-
-  dns_name = var.dns_subdomain != "" ? var.dns_subdomain : module.this.name
-  zone_id  = var.dns_zone_id
-  records  = [join("", aws_elastic_beanstalk_environment.default.*.cname)]
-
-  context = module.this.context
-}
+data "aws_region" "current" {}

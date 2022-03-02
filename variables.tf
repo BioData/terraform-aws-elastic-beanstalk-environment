@@ -1,6 +1,8 @@
-variable "region" {
-  type        = string
-  description = "AWS region"
+variable "enabled" {
+  type        = bool
+  description = "Enable or disable the resources of the module"
+  default     = true
+  nullable    = false
 }
 
 variable "description" {
@@ -12,6 +14,11 @@ variable "description" {
 variable "elastic_beanstalk_application_name" {
   type        = string
   description = "Elastic Beanstalk application name"
+}
+
+variable "elastic_beanstalk_environment_name" {
+  type        = string
+  description = "Elastic Beanstalk environment name"
 }
 
 variable "environment_type" {

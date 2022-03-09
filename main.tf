@@ -451,16 +451,16 @@ locals {
   ]
 
   alb_settings = [
-    {
-      namespace = "aws:elbv2:loadbalancer"
-      name      = "AccessLogsS3Bucket"
-      value     = !var.loadbalancer_is_shared ? join("", sort(aws_s3_bucket.elb_logs.*.id)) : ""
-    },
-    {
-      namespace = "aws:elbv2:loadbalancer"
-      name      = "AccessLogsS3Enabled"
-      value     = "true"
-    },
+    #{
+    #  namespace = "aws:elbv2:loadbalancer"
+    #  name      = "AccessLogsS3Bucket"
+    #  value     = !var.loadbalancer_is_shared ? join("", sort(aws_s3_bucket.elb_logs.*.id)) : ""
+    #},
+    #{
+    #  namespace = "aws:elbv2:loadbalancer"
+    #  name      = "AccessLogsS3Enabled"
+    #  value     = "true"
+    #},
     {
       namespace = "aws:elbv2:listener:default"
       name      = "ListenerEnabled"

@@ -1,3 +1,10 @@
+variable "is_ecs_platform" {
+  type        = bool
+  description = "Enable or disable ECS permissions"
+  default     = false
+  nullable    = false
+}
+
 variable "enabled" {
   type        = bool
   description = "Enable or disable the resources of the module"
@@ -292,6 +299,7 @@ variable "application_port" {
   type        = number
   default     = 80
   description = "Port application is listening on"
+  nullable    = false
 }
 
 variable "preferred_start_time" {

@@ -42,6 +42,13 @@ resource "aws_iam_role_policy_attachment" "enhanced_health" {
   policy_arn = "arn:${local.partition}:iam::aws:policy/service-role/AWSElasticBeanstalkEnhancedHealth"
 }
 
+resource "aws_iam_role_policy_attachment" "sercive_ecs_policy" {
+  count = local.enabled && var.is_ecs_platform ? 1 : 0
+
+  role       = join("", aws_iam_role.service.*.name)
+  policy_arn = "arn:${local.partition}:iam::aws:policy/service-role/AWSElasticBeanstalkRoleECS"
+}
+
 resource "aws_iam_role_policy_attachment" "service" {
   count = local.enabled ? 1 : 0
 
@@ -107,6 +114,13 @@ resource "aws_iam_role_policy_attachment" "web_tier" {
 
   role       = join("", aws_iam_role.ec2.*.name)
   policy_arn = "arn:${local.partition}:iam::aws:policy/AWSElasticBeanstalkWebTier"
+}
+
+resource "aws_iam_role_policy_attachment" "ec2_ecs_policy" {
+  count = local.enabled && var.is_ecs_platform ? 1 : 0
+
+  role       = join("", aws_iam_role.ec2.*.name)
+  policy_arn = "arn:${local.partition}:iam::aws:policy/AWSElasticBeanstalkMulticontainerDocker"
 }
 
 resource "aws_iam_role_policy_attachment" "worker_tier" {

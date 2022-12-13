@@ -1,6 +1,6 @@
 locals {
   enabled   = var.enabled
-  partition = join("", data.aws_partition.current.*.partition)
+  partition = join("", data.aws_partition.current[*].partition)
 }
 
 data "aws_partition" "current" {
@@ -31,21 +31,21 @@ resource "aws_iam_role" "service" {
   count = local.enabled ? 1 : 0
 
   name               = "BioData-${var.elastic_beanstalk_environment_name}-eb-service-role"
-  assume_role_policy = join("", data.aws_iam_policy_document.service.*.json)
+  assume_role_policy = join("", data.aws_iam_policy_document.service[*].json)
   tags               = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "enhanced_health" {
   count = local.enabled && var.enhanced_reporting_enabled ? 1 : 0
 
-  role       = join("", aws_iam_role.service.*.name)
+  role       = join("", aws_iam_role.service[*].name)
   policy_arn = "arn:${local.partition}:iam::aws:policy/service-role/AWSElasticBeanstalkEnhancedHealth"
 }
 
 resource "aws_iam_role_policy_attachment" "service" {
   count = local.enabled ? 1 : 0
 
-  role       = join("", aws_iam_role.service.*.name)
+  role       = join("", aws_iam_role.service[*].name)
   policy_arn = var.prefer_legacy_service_policy ? "arn:${local.partition}:iam::aws:policy/service-role/AWSElasticBeanstalkService" : "arn:${local.partition}:iam::aws:policy/AWSElasticBeanstalkManagedUpdatesCustomerRolePolicy"
 }
 
@@ -90,7 +90,7 @@ resource "aws_iam_role" "ec2" {
   count = local.enabled ? 1 : 0
 
   name               = "BioData-${var.elastic_beanstalk_environment_name}-eb-ec2-role"
-  assume_role_policy = join("", data.aws_iam_policy_document.ec2.*.json)
+  assume_role_policy = join("", data.aws_iam_policy_document.ec2[*].json)
   tags               = var.tags
 }
 
@@ -98,35 +98,35 @@ resource "aws_iam_role_policy" "default" {
   count = local.enabled ? 1 : 0
 
   name   = "BioData-${var.elastic_beanstalk_environment_name}-eb-default-policy"
-  role   = join("", aws_iam_role.ec2.*.id)
-  policy = join("", data.aws_iam_policy_document.extended.*.json)
+  role   = join("", aws_iam_role.ec2[*].id)
+  policy = join("", data.aws_iam_policy_document.extended[*].json)
 }
 
 resource "aws_iam_role_policy_attachment" "web_tier" {
   count = local.enabled && var.tier == "WebServer" ? 1 : 0
 
-  role       = join("", aws_iam_role.ec2.*.name)
+  role       = join("", aws_iam_role.ec2[*].name)
   policy_arn = "arn:${local.partition}:iam::aws:policy/AWSElasticBeanstalkWebTier"
 }
 
 resource "aws_iam_role_policy_attachment" "ec2_ecs_policy" {
   count = local.enabled && var.is_ecs_platform ? 1 : 0
 
-  role       = join("", aws_iam_role.ec2.*.name)
+  role       = join("", aws_iam_role.ec2[*].name)
   policy_arn = "arn:${local.partition}:iam::aws:policy/AWSElasticBeanstalkMulticontainerDocker"
 }
 
 resource "aws_iam_role_policy_attachment" "worker_tier" {
   count = local.enabled && var.tier == "Worker" ? 1 : 0
 
-  role       = join("", aws_iam_role.ec2.*.name)
+  role       = join("", aws_iam_role.ec2[*].name)
   policy_arn = "arn:${local.partition}:iam::aws:policy/AWSElasticBeanstalkWorkerTier"
 }
 
 resource "aws_iam_role_policy_attachment" "ssm_ec2" {
   count = local.enabled ? 1 : 0
 
-  role       = join("", aws_iam_role.ec2.*.name)
+  role       = join("", aws_iam_role.ec2[*].name)
   policy_arn = var.prefer_legacy_ssm_policy ? "arn:${local.partition}:iam::aws:policy/service-role/AmazonEC2RoleforSSM" : "arn:${local.partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
 
   lifecycle {
@@ -137,7 +137,7 @@ resource "aws_iam_role_policy_attachment" "ssm_ec2" {
 resource "aws_iam_role_policy_attachment" "ssm_automation" {
   count = local.enabled ? 1 : 0
 
-  role       = join("", aws_iam_role.ec2.*.name)
+  role       = join("", aws_iam_role.ec2[*].name)
   policy_arn = "arn:${local.partition}:iam::aws:policy/service-role/AmazonSSMAutomationRole"
 
   lifecycle {
@@ -150,7 +150,7 @@ resource "aws_iam_role_policy_attachment" "ssm_automation" {
 resource "aws_iam_role_policy_attachment" "ecr_readonly" {
   count = local.enabled ? 1 : 0
 
-  role       = join("", aws_iam_role.ec2.*.name)
+  role       = join("", aws_iam_role.ec2[*].name)
   policy_arn = "arn:${local.partition}:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
@@ -158,7 +158,7 @@ resource "aws_ssm_activation" "ec2" {
   count = local.enabled ? 1 : 0
 
   name               = var.elastic_beanstalk_environment_name
-  iam_role           = join("", aws_iam_role.ec2.*.id)
+  iam_role           = join("", aws_iam_role.ec2[*].id)
   registration_limit = var.autoscale_max
   tags               = var.tags
 }
@@ -169,15 +169,15 @@ data "aws_iam_policy_document" "empty" {
 data "aws_iam_policy_document" "extended" {
   count = local.enabled ? 1 : 0
 
-  source_json   = join("", data.aws_iam_policy_document.empty.*.json)
-  override_json = var.extended_ec2_policy_document
+  source_policy_documents   = data.aws_iam_policy_document.empty[*].json
+  override_policy_documents = var.extended_ec2_policy_documents
 }
 
 resource "aws_iam_instance_profile" "ec2" {
   count = local.enabled ? 1 : 0
 
   name = "BioData-${var.elastic_beanstalk_environment_name}-eb-ec2-policy"
-  role = join("", aws_iam_role.ec2.*.name)
+  role = join("", aws_iam_role.ec2[*].name)
   tags = var.tags
 }
 
@@ -187,84 +187,6 @@ locals {
   # `Namespace` should be removed as well since any string that contains `Name` forces recreation
   # https://github.com/terraform-providers/terraform-provider-aws/issues/3963
   tags = { for t in keys(var.tags) : t => var.tags[t] if t != "Name" && t != "Namespace" }
-
-  classic_elb_settings = [
-    {
-      namespace = "aws:elb:loadbalancer"
-      name      = "CrossZone"
-      value     = var.loadbalancer_crosszone
-    },
-    {
-      namespace = "aws:elb:loadbalancer"
-      name      = "SecurityGroups"
-      value     = join(",", sort(var.loadbalancer_security_groups))
-    },
-    {
-      namespace = "aws:elb:loadbalancer"
-      name      = "ManagedSecurityGroup"
-      value     = var.loadbalancer_managed_security_group
-    },
-    {
-      namespace = "aws:elb:listener"
-      name      = "ListenerProtocol"
-      value     = "HTTP"
-    },
-    {
-      namespace = "aws:elb:listener"
-      name      = "InstancePort"
-      value     = var.application_port
-    },
-    {
-      namespace = "aws:elb:listener"
-      name      = "ListenerEnabled"
-      value     = var.http_listener_enabled || var.loadbalancer_certificate_arn == "" ? "true" : "false"
-    },
-    {
-      namespace = "aws:elb:listener:443"
-      name      = "ListenerProtocol"
-      value     = "HTTPS"
-    },
-    {
-      namespace = "aws:elb:listener:443"
-      name      = "InstancePort"
-      value     = var.application_port
-    },
-    {
-      namespace = "aws:elb:listener:443"
-      name      = "SSLCertificateId"
-      value     = var.loadbalancer_certificate_arn
-    },
-    {
-      namespace = "aws:elb:listener:443"
-      name      = "ListenerEnabled"
-      value     = var.loadbalancer_certificate_arn == "" ? "false" : "true"
-    },
-    {
-      namespace = "aws:elb:listener:${var.ssh_listener_port}"
-      name      = "ListenerProtocol"
-      value     = "TCP"
-    },
-    {
-      namespace = "aws:elb:listener:${var.ssh_listener_port}"
-      name      = "InstancePort"
-      value     = "22"
-    },
-    {
-      namespace = "aws:elb:listener:${var.ssh_listener_port}"
-      name      = "ListenerEnabled"
-      value     = var.ssh_listener_enabled
-    },
-    {
-      namespace = "aws:elb:policies"
-      name      = "ConnectionSettingIdleTimeout"
-      value     = var.loadbalancer_connection_idle_timeout
-    },
-    {
-      namespace = "aws:elb:policies"
-      name      = "ConnectionDrainingEnabled"
-      value     = "true"
-    },
-  ]
 
   generic_alb_settings = [
     {
@@ -291,7 +213,7 @@ locals {
     #{
     #  namespace = "aws:elbv2:loadbalancer"
     #  name      = "AccessLogsS3Bucket"
-    #  value     = !var.loadbalancer_is_shared ? join("", sort(aws_s3_bucket.elb_logs.*.id)) : ""
+    #  value     = !var.loadbalancer_is_shared ? join("", sort(aws_s3_bucket.elb_logs[*].id)) : ""
     #},
     #{
     #  namespace = "aws:elbv2:loadbalancer"
@@ -409,10 +331,9 @@ locals {
   elb_settings_nlb        = var.loadbalancer_type == "network" ? concat(local.nlb_settings, local.generic_elb_settings, local.beanstalk_elb_settings) : []
   elb_settings_alb        = var.loadbalancer_type == "application" && !var.loadbalancer_is_shared ? concat(local.alb_settings, local.generic_alb_settings, local.generic_elb_settings, local.beanstalk_elb_settings) : []
   elb_settings_shared_alb = var.loadbalancer_type == "application" && var.loadbalancer_is_shared ? concat(local.shared_alb_settings, local.generic_alb_settings, local.generic_elb_settings) : []
-  elb_setting_classic     = var.loadbalancer_type == "classic" ? concat(local.classic_elb_settings, local.generic_elb_settings, local.beanstalk_elb_settings) : []
 
   # If the tier is "WebServer" add the elb_settings, otherwise exclude them
-  elb_settings_final = var.tier == "WebServer" ? concat(local.elb_settings_nlb, local.elb_settings_alb, local.elb_settings_shared_alb, local.elb_setting_classic) : []
+  elb_settings_final = var.tier == "WebServer" ? concat(local.elb_settings_nlb, local.elb_settings_alb, local.elb_settings_shared_alb) : []
 }
 
 #
@@ -472,7 +393,7 @@ resource "aws_elastic_beanstalk_environment" "default" {
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name      = "IamInstanceProfile"
-    value     = join("", aws_iam_instance_profile.ec2.*.name)
+    value     = join("", aws_iam_instance_profile.ec2[*].name)
     resource  = ""
   }
 
@@ -493,7 +414,7 @@ resource "aws_elastic_beanstalk_environment" "default" {
   setting {
     namespace = "aws:elasticbeanstalk:environment"
     name      = "ServiceRole"
-    value     = join("", aws_iam_role.service.*.arn)
+    value     = join("", aws_iam_role.service[*].arn)
     resource  = ""
   }
 
@@ -933,50 +854,10 @@ data "aws_iam_policy_document" "elb_logs" {
 
     principals {
       type        = "AWS"
-      identifiers = [join("", data.aws_elb_service_account.main.*.arn)]
+      identifiers = [join("", data.aws_elb_service_account.main[*].arn)]
     }
 
     effect = "Allow"
-  }
-}
-
-resource "aws_s3_bucket" "elb_logs" {
-  #bridgecrew:skip=BC_AWS_S3_13:Skipping `Enable S3 Bucket Logging` check until bridgecrew will support dynamic blocks (https://github.com/bridgecrewio/checkov/issues/776).
-  #bridgecrew:skip=BC_AWS_S3_14:Skipping `Ensure all data stored in the S3 bucket is securely encrypted at rest` check until bridgecrew will support dynamic blocks (https://github.com/bridgecrewio/checkov/issues/776).
-  #bridgecrew:skip=CKV_AWS_52:Skipping `Ensure S3 bucket has MFA delete enabled` due to issue in terraform (https://github.com/hashicorp/terraform-provider-aws/issues/629).
-  #bridgecrew:skip=BC_AWS_S3_16:Skipping since adding count condition sounds like to trigger an error. (https://github.com/cloudposse/terraform-aws-elastic-beanstalk-environment/pull/182)
-  #bridgecrew:skip=BC_AWS_GENERAL_56:Skipping "Ensure S3 buckets are encrypted with KMS by default"
-  #bridgecrew:skip=BC_AWS_NETWORKING_52:Skipping "Ensure S3 Bucket has public access blocks"
-  #bridgecrew:skip=BC_AWS_GENERAL_72:Skipping "Ensure S3 bucket has cross-region replication enabled"
-  count         = 0
-  bucket        = "${var.elastic_beanstalk_environment_name}-eb-loadbalancer-logs"
-  acl           = "private"
-  force_destroy = var.force_destroy
-  policy        = join("", data.aws_iam_policy_document.elb_logs.*.json)
-  tags          = var.tags
-
-  dynamic "server_side_encryption_configuration" {
-    for_each = var.s3_bucket_encryption_enabled ? ["true"] : []
-
-    content {
-      rule {
-        apply_server_side_encryption_by_default {
-          sse_algorithm = "AES256"
-        }
-      }
-    }
-  }
-
-  versioning {
-    enabled = var.s3_bucket_versioning_enabled
-  }
-
-  dynamic "logging" {
-    for_each = var.s3_bucket_access_log_bucket_name != "" ? [1] : []
-    content {
-      target_bucket = var.s3_bucket_access_log_bucket_name
-      target_prefix = "logs/${var.elastic_beanstalk_environment_name}/"
-    }
   }
 }
 

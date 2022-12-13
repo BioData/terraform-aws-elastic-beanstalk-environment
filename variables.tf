@@ -487,9 +487,9 @@ variable "deployment_timeout" {
   description = "Number of seconds to wait for an instance to complete executing commands"
 }
 
-variable "extended_ec2_policy_document" {
-  type        = string
-  default     = "{}"
+variable "extended_ec2_policy_documents" {
+  type        = list(string)
+  default     = ["{}"]
   description = "Extensions or overrides for the IAM role assigned to EC2 instances"
 }
 

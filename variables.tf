@@ -152,6 +152,12 @@ variable "autoscale_max" {
   description = "Maximum instances to launch"
 }
 
+variable "ssm_activation_registration_limit" {
+  description = "Maximum instances to register for activation with SSM Run command"
+  type        = number
+  default     = null
+}
+
 variable "solution_stack_name" {
   type        = string
   description = "Elastic Beanstalk stack, e.g. Docker, Go, Node, Java, IIS. For more info, see https://docs.aws.amazon.com/elasticbeanstalk/latest/platforms/platforms-supported.html"

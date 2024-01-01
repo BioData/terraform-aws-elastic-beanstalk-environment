@@ -159,7 +159,7 @@ resource "aws_ssm_activation" "ec2" {
 
   name               = var.elastic_beanstalk_environment_name
   iam_role           = join("", aws_iam_role.ec2[*].id)
-  registration_limit = var.autoscale_max
+  registration_limit = coalesce(var.autoscale_max, var.ssm_activation_registration_limit)
   tags               = var.tags
   depends_on         = [aws_elastic_beanstalk_environment.default]
 }
@@ -440,18 +440,24 @@ resource "aws_elastic_beanstalk_environment" "default" {
     resource  = ""
   }
 
-  setting {
-    namespace = "aws:autoscaling:asg"
-    name      = "MinSize"
-    value     = var.autoscale_min
-    resource  = ""
+  dynamic "setting" {
+    for_each = var.autoscale_min == null ? [] : [true]
+      content {
+      namespace = "aws:autoscaling:asg"
+      name      = "MinSize"
+      value     = var.autoscale_min
+      resource  = ""
+    }
   }
 
-  setting {
-    namespace = "aws:autoscaling:asg"
-    name      = "MaxSize"
-    value     = var.autoscale_max
-    resource  = ""
+  dynamic "setting" {
+    for_each = var.autoscale_max == null ? [] : [true]
+      content {
+      namespace = "aws:autoscaling:asg"
+      name      = "MaxSize"
+      value     = var.autoscale_max
+      resource  = ""
+    }
   }
 
   setting {

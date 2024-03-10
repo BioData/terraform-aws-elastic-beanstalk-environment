@@ -213,13 +213,13 @@ variable "deployment_policy" {
 
 variable "updating_min_in_service" {
   type        = number
-  default     = 1
+  default     = null
   description = "Minimum number of instances in service during update"
 }
 
 variable "updating_max_batch" {
   type        = number
-  default     = 1
+  default     = null
   description = "Maximum number of instances to update at once"
 }
 

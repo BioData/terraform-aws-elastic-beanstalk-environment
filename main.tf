@@ -484,7 +484,7 @@ resource "aws_elastic_beanstalk_environment" "default" {
   setting {
     namespace = "aws:autoscaling:updatepolicy:rollingupdate"
     name      = "MinInstancesInService"
-    value     = var.updating_min_in_service
+    value     = var.updating_min_in_service == null ? "" : var.updating_min_in_service
     resource  = ""
   }
 
@@ -498,7 +498,7 @@ resource "aws_elastic_beanstalk_environment" "default" {
   setting {
     namespace = "aws:autoscaling:updatepolicy:rollingupdate"
     name      = "MaxBatchSize"
-    value     = var.updating_max_batch
+    value     = var.updating_max_batch == null ? "" : var.updating_max_batch
     resource  = ""
   }
 

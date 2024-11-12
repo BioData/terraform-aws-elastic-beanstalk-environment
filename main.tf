@@ -123,28 +123,6 @@ resource "aws_iam_role_policy_attachment" "worker_tier" {
   policy_arn = "arn:${local.partition}:iam::aws:policy/AWSElasticBeanstalkWorkerTier"
 }
 
-resource "aws_iam_role_policy_attachment" "ssm_ec2" {
-  count = local.enabled ? 1 : 0
-
-  role       = join("", aws_iam_role.ec2[*].name)
-  policy_arn = var.prefer_legacy_ssm_policy ? "arn:${local.partition}:iam::aws:policy/service-role/AmazonEC2RoleforSSM" : "arn:${local.partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-resource "aws_iam_role_policy_attachment" "ssm_automation" {
-  count = local.enabled ? 1 : 0
-
-  role       = join("", aws_iam_role.ec2[*].name)
-  policy_arn = "arn:${local.partition}:iam::aws:policy/service-role/AmazonSSMAutomationRole"
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
 # http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create_deploy_docker.container.console.html
 # http://docs.aws.amazon.com/AmazonECR/latest/userguide/ecr_managed_policies.html#AmazonEC2ContainerRegistryReadOnly
 resource "aws_iam_role_policy_attachment" "ecr_readonly" {

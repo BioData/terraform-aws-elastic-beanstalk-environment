@@ -817,6 +817,16 @@ resource "aws_elastic_beanstalk_environment" "default" {
       resource  = ""
     }
   }
+
+  lifecycle {
+    replace_triggered_by = [null_resource.elb_scheme_tracker.id]  # This will trigger replacement if elb_scheme changes
+  }
+}
+
+resource "null_resource" "elb_scheme_tracker" {
+  triggers = {
+    elb_scheme = var.elb_scheme
+  }
 }
 
 data "aws_elb_service_account" "main" {

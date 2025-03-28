@@ -825,7 +825,8 @@ resource "aws_elastic_beanstalk_environment" "default" {
 
 resource "null_resource" "elb_scheme_tracker" {
   triggers = {
-    elb_scheme = var.elb_scheme
+    elb_scheme = var.elb_scheme,
+    solution_stack_name = replace(var.solution_stack_name, "/ v[0-9]+\\.[0-9]+\\.[0-9]+/", "") 
   }
 }
 

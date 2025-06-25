@@ -819,13 +819,18 @@ resource "aws_elastic_beanstalk_environment" "default" {
   }
 
   lifecycle {
-    replace_triggered_by = [null_resource.elb_scheme_tracker.id]  # This will trigger replacement if elb_scheme changes
+    replace_triggered_by = [null_resource.elb_scheme_tracker.id, null_resource.solution_stack_name_tracker.id]  # This will trigger replacement if elb_scheme changes
   }
 }
 
 resource "null_resource" "elb_scheme_tracker" {
   triggers = {
-    elb_scheme = var.elb_scheme,
+    elb_scheme = var.elb_scheme
+  }
+}
+
+resource "null_resource" "solution_stack_name_tracker" {
+  triggers = {
     solution_stack_name = replace(var.solution_stack_name, "/ v[0-9]+\\.[0-9]+\\.[0-9]+/", "") 
   }
 }

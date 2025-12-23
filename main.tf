@@ -821,6 +821,25 @@ resource "aws_elastic_beanstalk_environment" "default" {
   lifecycle {
     replace_triggered_by = [null_resource.elb_scheme_tracker.id, null_resource.solution_stack_name_tracker.id]  # This will trigger replacement if elb_scheme changes
   }
+
+  # Clean up listener rules before destroying the environment
+  # Only run cleanup if using a shared load balancer
+  provisioner "local-exec" {
+    when    = destroy
+    command = <<-EOT
+      set -euo pipefail
+      ENV_NAME="${self.name}"
+      APP_NAME="${self.application}"
+      SCRIPT="${path.module}/scripts/cleanup_listener_rules.sh"
+
+      if [ ! -x "$SCRIPT" ]; then
+        echo "Error: cleanup script not found or not executable: $SCRIPT" >&2
+        exit 1
+      fi
+
+      "$SCRIPT" "$ENV_NAME" "$APP_NAME"
+    EOT
+  }
 }
 
 resource "null_resource" "elb_scheme_tracker" {

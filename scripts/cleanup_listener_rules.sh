@@ -28,7 +28,7 @@ IS_SHARED=$(aws elasticbeanstalk describe-configuration-settings \
 
 if [[ "$IS_SHARED" != "true" ]]; then
   echo "Skipping cleanup - not using shared load balancer (IS_SHARED=$IS_SHARED)"
-  exit 1
+  exit 0
 fi
 
 echo "Environment uses shared load balancer, proceeding with cleanup"
